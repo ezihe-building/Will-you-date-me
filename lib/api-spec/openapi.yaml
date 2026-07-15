@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
+  version: 0.2.0
   description: API specification
 servers:
   - url: /api
@@ -10,6 +10,18 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: bookings
+    description: Date booking operations
+  - name: responses
+    description: Visitor response operations
+  - name: visits
+    description: Visitor tracking
+  - name: settings
+    description: Site owner settings
+  - name: proposals
+    description: Personalized proposal links
+  - name: auth
+    description: Owner dashboard authentication
 paths:
   /healthz:
     get:
@@ -24,6 +36,413 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /visits:
+    post:
+      operationId: recordVisit
+      tags: [visits]
+      summary: Record a visitor landing on the site
+      responses:
+        "201":
+          description: Visit recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitAck"
+
+  /responses:
+    get:
+      operationId: listResponses
+      tags: [responses]
+      summary: List all visitor responses (owner only)
+      parameters:
+        - name: proposalId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filter responses to a specific proposal
+      responses:
+        "200":
+          description: List of responses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VisitorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createResponse
+      tags: [responses]
+      summary: Submit a visitor's response to the date question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResponseInput"
+      responses:
+        "201":
+          description: Response recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitorResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      summary: List all date bookings (owner only)
+      parameters:
+        - name: proposalId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filter bookings to a specific proposal
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a new date booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [responses]
+      summary: Get dashboard summary statistics (owner only)
+      parameters:
+        - name: proposalId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Get stats for a specific proposal (omit for global stats)
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get public site settings (welcome message, music, gallery)
+      responses:
+        "200":
+          description: Site settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update site settings (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteSettingsInput"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /proposals:
+    get:
+      operationId: listProposals
+      tags: [proposals]
+      summary: List all personalized proposals (owner only)
+      responses:
+        "200":
+          description: List of proposals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Proposal"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createProposal
+      tags: [proposals]
+      summary: Create a new personalized proposal link (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposalInput"
+      responses:
+        "201":
+          description: Proposal created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /proposals/{slug}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getProposal
+      tags: [proposals]
+      summary: Get public details of a proposal (name hidden until verified)
+      responses:
+        "200":
+          description: Proposal public details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalPublic"
+        "404":
+          description: Proposal not found or inactive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteProposal
+      tags: [proposals]
+      summary: Delete a proposal and all its data (owner only)
+      responses:
+        "200":
+          description: Proposal deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Proposal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /proposals/{slug}/verify:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: verifyProposal
+      tags: [proposals]
+      summary: Verify the recipient's name to unlock the full proposal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposalVerifyInput"
+      responses:
+        "200":
+          description: Name verified; full proposal returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Incorrect name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Proposal not found or inactive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /proposals/{slug}/reset:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: resetProposal
+      tags: [proposals]
+      summary: Reset a proposal's responses and bookings (owner only)
+      responses:
+        "200":
+          description: Proposal reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Proposal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in to the owner dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthStatus"
+        "401":
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out of the owner dashboard
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthStatus"
+
+  /auth/me:
+    get:
+      operationId: getAuthStatus
+      tags: [auth]
+      summary: Check whether the current session is authenticated
+      responses:
+        "200":
+          description: Auth status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthStatus"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +453,244 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    VisitAck:
+      type: object
+      properties:
+        totalVisitors:
+          type: integer
+      required:
+        - totalVisitors
+
+    ResponseChoice:
+      type: string
+      enum: [yes, maybe, not_now]
+
+    ResponseInput:
+      type: object
+      properties:
+        response:
+          $ref: "#/components/schemas/ResponseChoice"
+        proposalId:
+          type: ["integer", "null"]
+          description: Optional proposal this response belongs to
+      required:
+        - response
+
+    VisitorResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        proposalId:
+          type: ["integer", "null"]
+        response:
+          $ref: "#/components/schemas/ResponseChoice"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - proposalId
+        - response
+        - createdAt
+
+    LocationType:
+      type: string
+      enum: [coffee_shop, cinema, restaurant, beach, park, custom]
+
+    BookingInput:
+      type: object
+      properties:
+        date:
+          type: string
+          description: Calendar date in YYYY-MM-DD format
+        time:
+          type: string
+          description: Time in HH:MM format
+        location:
+          $ref: "#/components/schemas/LocationType"
+        customLocation:
+          type: ["string", "null"]
+          description: Required when location is "custom"
+        proposalId:
+          type: ["integer", "null"]
+          description: Optional proposal this booking belongs to
+      required:
+        - date
+        - time
+        - location
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        proposalId:
+          type: ["integer", "null"]
+        date:
+          type: string
+        time:
+          type: string
+        location:
+          $ref: "#/components/schemas/LocationType"
+        customLocation:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - proposalId
+        - date
+        - time
+        - location
+        - customLocation
+        - createdAt
+
+    DashboardStats:
+      type: object
+      properties:
+        totalVisitors:
+          type: integer
+        totalBookings:
+          type: integer
+        acceptedCount:
+          type: integer
+        maybeCount:
+          type: integer
+        declinedCount:
+          type: integer
+        recentBookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        recentResponses:
+          type: array
+          items:
+            $ref: "#/components/schemas/VisitorResponse"
+      required:
+        - totalVisitors
+        - totalBookings
+        - acceptedCount
+        - maybeCount
+        - declinedCount
+        - recentBookings
+        - recentResponses
+
+    SiteSettings:
+      type: object
+      properties:
+        welcomeMessage:
+          type: string
+        musicUrl:
+          type: ["string", "null"]
+        galleryPhotos:
+          type: array
+          items:
+            type: string
+      required:
+        - welcomeMessage
+        - musicUrl
+        - galleryPhotos
+
+    SiteSettingsInput:
+      type: object
+      properties:
+        welcomeMessage:
+          type: string
+          minLength: 1
+        musicUrl:
+          type: ["string", "null"]
+        galleryPhotos:
+          type: array
+          items:
+            type: string
+      required:
+        - welcomeMessage
+        - galleryPhotos
+
+    Proposal:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        recipientName:
+          type: string
+        welcomeMessage:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - slug
+        - recipientName
+        - welcomeMessage
+        - isActive
+        - createdAt
+
+    ProposalInput:
+      type: object
+      properties:
+        recipientName:
+          type: string
+          minLength: 1
+        welcomeMessage:
+          type: ["string", "null"]
+        slug:
+          type: ["string", "null"]
+          description: Optional custom slug; a random one is generated if omitted
+      required:
+        - recipientName
+
+    ProposalPublic:
+      type: object
+      properties:
+        slug:
+          type: string
+        welcomeMessage:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+      required:
+        - slug
+        - welcomeMessage
+        - isActive
+
+    ProposalVerifyInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+        - name
+
+    LoginInput:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+      required:
+        - password
+
+    AuthStatus:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+      required:
+        - authenticated
