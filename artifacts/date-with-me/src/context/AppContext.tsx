@@ -28,21 +28,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { data: settings } = useGetSettings();
   
-  const musicUrl = settings?.musicUrl || `${import.meta.env.BASE_URL}audio/romantic-theme.mp3`;
+  const defaultMusicUrl = `${import.meta.env.BASE_URL || '/'}audio/romantic-theme.mp3`.replace(/\/+/g, '/');
+  const musicUrl = settings?.musicUrl || defaultMusicUrl;
 
-  // Initialize audio element
-  useEffect(() => {
+  // Initialize audio element on first user interaction for reliable playback
+  const initAudio = () => {
     if (!audioRef.current) {
       audioRef.current = new Audio(musicUrl);
       audioRef.current.loop = true;
+      audioRef.current.volume = volume;
     } else if (audioRef.current.src !== musicUrl && musicUrl) {
-      const isPlaying = !audioRef.current.paused;
       audioRef.current.src = musicUrl;
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.log('Audio play failed:', e));
-      }
     }
-  }, [musicUrl]);
+  };
 
   // Handle play/pause
   useEffect(() => {
@@ -52,7 +50,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Fade in
       audioRef.current.volume = 0;
       audioRef.current.play().catch(e => {
-        console.log('Autoplay prevented:', e);
+        console.log('Audio play failed:', e);
         setIsMusicPlaying(false);
       });
       
@@ -86,6 +84,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const playMusicOnce = () => {
     if (!musicPlayedOnce) {
       setMusicPlayedOnce(true);
+      initAudio();
       setIsMusicPlaying(true);
     }
   };
