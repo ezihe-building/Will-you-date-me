@@ -8,6 +8,8 @@
 
 export interface SiteSettingsInput {
   /** @minLength 1 */
+  recipientName: string;
+  /** @minLength 1 */
   welcomeMessage: string;
   /** @nullable */
   musicUrl?: string | null;

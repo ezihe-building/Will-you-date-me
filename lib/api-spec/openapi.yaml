@@ -588,6 +588,8 @@ components:
     SiteSettings:
       type: object
       properties:
+        recipientName:
+          type: string
         welcomeMessage:
           type: string
         musicUrl:
@@ -597,6 +599,7 @@ components:
           items:
             type: string
       required:
+        - recipientName
         - welcomeMessage
         - musicUrl
         - galleryPhotos
@@ -604,6 +607,9 @@ components:
     SiteSettingsInput:
       type: object
       properties:
+        recipientName:
+          type: string
+          minLength: 1
         welcomeMessage:
           type: string
           minLength: 1
@@ -614,6 +620,7 @@ components:
           items:
             type: string
       required:
+        - recipientName
         - welcomeMessage
         - galleryPhotos
 

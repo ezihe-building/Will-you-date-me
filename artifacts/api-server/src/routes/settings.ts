@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, siteSettingsTable } from "@workspace/db";
 import { GetSettingsResponse, UpdateSettingsBody, UpdateSettingsResponse } from "@workspace/api-zod";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { requireAdmin } from "../lib/auth";
 const router: IRouter = Router();
 
 const SETTINGS_ID = 1;
@@ -51,6 +53,7 @@ router.put("/settings", async (req, res): Promise<void> => {
   const [updated] = await db
     .update(siteSettingsTable)
     .set({
+      recipientName: parsed.data.recipientName,
       welcomeMessage: parsed.data.welcomeMessage,
       musicUrl: parsed.data.musicUrl ?? null,
       galleryPhotos: parsed.data.galleryPhotos,

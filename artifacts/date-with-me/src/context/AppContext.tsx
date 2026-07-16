@@ -9,9 +9,11 @@ interface AppState {
   responseChoice: ResponseChoice;
   isMusicPlaying: boolean;
   volume: number;
+  musicPlayedOnce: boolean;
   setResponded: (choice: ResponseChoice) => void;
   setMusicPlaying: (playing: boolean) => void;
   setVolume: (volume: number) => void;
+  playMusicOnce: () => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -21,6 +23,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [responseChoice, setResponseChoice] = useState<ResponseChoice>(null);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
+  const [musicPlayedOnce, setMusicPlayedOnce] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { data: settings } = useGetSettings();
@@ -80,15 +83,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setHasResponded(true);
   };
 
+  const playMusicOnce = () => {
+    if (!musicPlayedOnce) {
+      setMusicPlayedOnce(true);
+      setIsMusicPlaying(true);
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       hasResponded,
       responseChoice,
       isMusicPlaying,
       volume,
+      musicPlayedOnce,
       setResponded,
       setMusicPlaying: setIsMusicPlaying,
-      setVolume
+      setVolume,
+      playMusicOnce,
     }}>
       {children}
     </AppContext.Provider>

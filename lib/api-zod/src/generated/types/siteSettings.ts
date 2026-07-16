@@ -7,6 +7,7 @@
  */
 
 export interface SiteSettings {
+  recipientName: string;
   welcomeMessage: string;
   /** @nullable */
   musicUrl: string | null;

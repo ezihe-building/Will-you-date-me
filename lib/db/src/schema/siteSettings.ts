@@ -5,6 +5,9 @@ import { z } from "zod/v4";
 // Singleton row (id = 1) holding the site owner's customizable content.
 export const siteSettingsTable = pgTable("site_settings", {
   id: integer("id").primaryKey().default(1),
+  recipientName: text("recipient_name")
+    .notNull()
+    .default(""),
   welcomeMessage: text("welcome_message")
     .notNull()
     .default("I've been wanting to ask you something for a long time..."),

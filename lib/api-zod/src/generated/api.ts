@@ -133,6 +133,7 @@ export const GetStatsResponse = zod.object({
  * @summary Get public site settings (welcome message, music, gallery)
  */
 export const GetSettingsResponse = zod.object({
+  "recipientName": zod.string(),
   "welcomeMessage": zod.string(),
   "musicUrl": zod.string().nullable(),
   "galleryPhotos": zod.array(zod.string())
@@ -145,13 +146,16 @@ export const GetSettingsResponse = zod.object({
 
 
 
+
 export const UpdateSettingsBody = zod.object({
+  "recipientName": zod.string().min(1),
   "welcomeMessage": zod.string().min(1),
   "musicUrl": zod.string().nullish(),
   "galleryPhotos": zod.array(zod.string())
 })
 
 export const UpdateSettingsResponse = zod.object({
+  "recipientName": zod.string(),
   "welcomeMessage": zod.string(),
   "musicUrl": zod.string().nullable(),
   "galleryPhotos": zod.array(zod.string())

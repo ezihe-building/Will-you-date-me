@@ -8,6 +8,18 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, Check, Heart, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const FLOWERS = ['🌹', '🌸', '🌷', '🌺', '🌻', '🌼', '🪻', '💐'];
+
+type FloatingItem = {
+  id: number;
+  emoji: string;
+  x: number;
+  size: number;
+  duration: number;
+  delay: number;
+  rotate: number;
+};
+
 const DATE_LOCATIONS = [
   { value: "coffee_shop", label: "☕ Coffee date", emoji: "☕" },
   { value: "cinema", label: "🎬 Movies", emoji: "🎬" },
@@ -22,7 +34,7 @@ export default function Home() {
   const recordVisit = useRecordVisit();
   const createResponse = useCreateResponse();
   const createBooking = useCreateBooking();
-  const { hasResponded, responseChoice, setResponded, setMusicPlaying } = useApp();
+  const { hasResponded, responseChoice, setResponded, playMusicOnce } = useApp();
 
   // Booking form
   const [bookingStep, setBookingStep] = useState<'idle' | 'picking' | 'booked'>('idle');
@@ -30,18 +42,44 @@ export default function Home() {
   const [customLocation, setCustomLocation] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [flowers, setFlowers] = useState<FloatingItem[]>([]);
+  const [nextFlowerId, setNextFlowerId] = useState(0);
 
   useEffect(() => {
     recordVisit.mutate();
   }, []);
 
+  const recipientName = settings?.recipientName || "you";
   const welcomeMessage = settings?.welcomeMessage || "I've been wanting to ask you something for a long time...";
+
+  const spawnFlowers = () => {
+    const count = 24;
+    const newFlowers: FloatingItem[] = [];
+    for (let i = 0; i < count; i++) {
+      newFlowers.push({
+        id: nextFlowerId + i,
+        emoji: FLOWERS[Math.floor(Math.random() * FLOWERS.length)],
+        x: Math.random() * 100,
+        size: 1.5 + Math.random() * 2.5,
+        duration: 2 + Math.random() * 2.5,
+        delay: Math.random() * 0.8,
+        rotate: Math.random() * 360,
+      });
+    }
+    setNextFlowerId(prev => prev + count);
+    setFlowers(prev => [...prev, ...newFlowers]);
+    // Cleanup after animations complete
+    setTimeout(() => {
+      setFlowers(prev => prev.filter(f => !newFlowers.find(nf => nf.id === f.id)));
+    }, 6000);
+  };
 
   const handleResponse = async (choice: 'yes' | 'maybe' | 'not_now') => {
     createResponse.mutate({ data: { response: choice, proposalId: null } });
     setResponded(choice);
     if (choice === 'yes') {
-      setMusicPlaying(true);
+      playMusicOnce();
+      spawnFlowers();
     }
   };
 
@@ -90,7 +128,7 @@ export default function Home() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               transition={{ delay: 0.6, duration: 1 }}
             >
-              Will you go on a date with me?
+              {recipientName ? `${recipientName}, will you go on a date with me?` : "Will you go on a date with me?"}
             </motion.h2>
 
             <motion.div
@@ -302,6 +340,23 @@ export default function Home() {
   return (
     <PublicLayout>
       {mainContent}
+      <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+        <AnimatePresence>
+          {flowers.map(f => (
+            <motion.div
+              key={f.id}
+              initial={{ opacity: 0, y: '110vh', x: `${f.x}vw`, rotate: 0, scale: 0 }}
+              animate={{ opacity: [0, 1, 1, 0], y: '-10vh', x: `${f.x + (Math.random() - 0.5) * 20}vw`, rotate: f.rotate, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: f.duration, delay: f.delay, ease: 'easeOut' }}
+              className="absolute"
+              style={{ fontSize: `${f.size}rem` }}
+            >
+              {f.emoji}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </PublicLayout>
   );
 }

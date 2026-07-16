@@ -96,6 +96,7 @@ export interface DashboardStats {
 }
 
 export interface SiteSettings {
+  recipientName: string;
   welcomeMessage: string;
   /** @nullable */
   musicUrl: string | null;
@@ -103,6 +104,8 @@ export interface SiteSettings {
 }
 
 export interface SiteSettingsInput {
+  /** @minLength 1 */
+  recipientName: string;
   /** @minLength 1 */
   welcomeMessage: string;
   /** @nullable */

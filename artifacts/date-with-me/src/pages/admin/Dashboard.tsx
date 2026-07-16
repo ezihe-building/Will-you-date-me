@@ -1,10 +1,7 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
-  useGetAuthStatus,
-  useLogin,
-  useLogout,
   useGetStats,
   useGetSettings,
   useUpdateSettings,
@@ -18,67 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  LogOut, Users, Heart, Calendar, Link2, Plus, Trash2, RotateCcw,
-  BarChart3, Settings, Lock, Copy, Check, Loader2,
+  Users, Heart, Calendar, Link2, Plus, Trash2, RotateCcw,
+  BarChart3, Settings, Copy, Check, Loader2, Home,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetStatsQueryKey, getGetSettingsQueryKey, getListProposalsQueryKey } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 
 type Tab = "overview" | "proposals" | "settings";
-
-function LoginForm() {
-  const [password, setPassword] = useState("");
-  const login = useLogin();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    login.mutate({ data: { password } });
-  };
-
-  return (
-    <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-sm"
-      >
-        <div className="border border-zinc-800 bg-zinc-900/50 backdrop-blur-md p-10 rounded-2xl">
-          <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-8">
-            <Lock className="w-5 h-5 text-zinc-400" />
-          </div>
-          <h1 className="text-xl font-medium text-white text-center mb-1 tracking-wide">
-            Dashboard
-          </h1>
-          <p className="text-zinc-500 text-xs text-center mb-8 tracking-widest uppercase">
-            Owner Access
-          </p>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-600 h-12 rounded-xl focus:border-zinc-500"
-              autoFocus
-            />
-            {login.isError && (
-              <p className="text-red-400 text-xs text-center">Incorrect password</p>
-            )}
-            <Button
-              type="submit"
-              className="w-full h-12 bg-white text-black hover:bg-zinc-100 rounded-xl font-medium tracking-wide"
-              disabled={!password || login.isPending}
-            >
-              {login.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Enter"}
-            </Button>
-          </form>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
 
 function StatCard({ label, value, icon: Icon, accent }: { label: string; value: number; icon: React.ElementType; accent?: string }) {
   return (
@@ -118,25 +62,23 @@ function CopyLink({ slug }: { slug: string }) {
 }
 
 export default function Dashboard() {
-  const [, navigate] = useLocation();
-  const { data: auth, isLoading: authLoading } = useGetAuthStatus();
-  const logout = useLogout();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>("overview");
 
   // Stats
-  const { data: stats, isLoading: statsLoading } = useGetStats({}, { query: { enabled: !!auth?.authenticated, queryKey: ['stats'] } });
+  const { data: stats, isLoading: statsLoading } = useGetStats({}, { query: { queryKey: ['stats'] } });
 
   // Settings
-  const { data: settings } = useGetSettings({ query: { enabled: !!auth?.authenticated, queryKey: ['settings-dash'] } });
+  const { data: settings } = useGetSettings({ query: { queryKey: ['settings-dash'] } });
   const updateSettings = useUpdateSettings();
+  const [recipientName, setRecipientName] = useState("");
   const [welcomeMsg, setWelcomeMsg] = useState("");
   const [musicUrl, setMusicUrl] = useState("");
   const [galleryPhotos, setGalleryPhotos] = useState("");
   const [settingsSaved, setSettingsSaved] = useState(false);
 
   // Proposals
-  const { data: proposals, isLoading: proposalsLoading } = useListProposals({ query: { enabled: !!auth?.authenticated, queryKey: ['proposals'] } });
+  const { data: proposals, isLoading: proposalsLoading } = useListProposals({ query: { queryKey: ['proposals'] } });
   const createProposal = useCreateProposal();
   const deleteProposal = useDeleteProposal();
   const resetProposal = useResetProposal();
@@ -145,21 +87,18 @@ export default function Dashboard() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // Sync settings fields when data loads
-  if (settings && welcomeMsg === "" && musicUrl === "" && galleryPhotos === "") {
+  if (settings && recipientName === "" && welcomeMsg === "" && musicUrl === "" && galleryPhotos === "") {
+    setRecipientName(settings.recipientName || "");
     setWelcomeMsg(settings.welcomeMessage || "");
     setMusicUrl(settings.musicUrl || "");
     setGalleryPhotos((settings.galleryPhotos || []).join("\n"));
   }
 
-  const handleLogout = () => {
-    logout.mutate();
-    navigate("/");
-  };
-
   const handleSaveSettings = () => {
     updateSettings.mutate(
       {
         data: {
+          recipientName: recipientName.trim(),
           welcomeMessage: welcomeMsg,
           musicUrl: musicUrl || null,
           galleryPhotos: galleryPhotos.split("\n").map(s => s.trim()).filter(Boolean),
@@ -207,16 +146,6 @@ export default function Dashboard() {
     });
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!auth?.authenticated) return <LoginForm />;
-
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: "overview", label: "Overview", icon: BarChart3 },
     { id: "proposals", label: "Proposals", icon: Link2 },
@@ -243,11 +172,13 @@ export default function Dashboard() {
                 </button>
               ))}
             </nav>
-            <Button variant="ghost" size="sm" onClick={handleLogout}
-              className="text-muted-foreground hover:text-foreground h-8 gap-1.5">
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-xs">Out</span>
-            </Button>
+            <Link href="/">
+              <Button variant="ghost" size="sm"
+                className="text-muted-foreground hover:text-foreground h-8 gap-1.5">
+                <Home className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs">Home</span>
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -399,6 +330,17 @@ export default function Dashboard() {
             <h2 className="text-2xl font-serif italic text-foreground mb-8">Site Settings</h2>
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-sm">
               <CardContent className="p-8 space-y-8">
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block font-medium">Her Name</label>
+                  <Input
+                    value={recipientName}
+                    onChange={e => setRecipientName(e.target.value)}
+                    className="bg-background/50 border-border/60"
+                    placeholder="e.g. Emma"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">Shown in the home page question: "Emma, will you go on a date with me?"</p>
+                </div>
+
                 <div>
                   <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block font-medium">Welcome Message</label>
                   <Textarea
