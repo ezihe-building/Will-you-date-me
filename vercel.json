@@ -4,18 +4,18 @@
   "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/date-with-me run build",
   "outputDirectory": "artifacts/date-with-me/dist/public",
   "env": {
-    "BASE_PATH": "/",
-    "PORT": "3000"
+    "BASE_PATH": "/"
   },
   "functions": {
-    "artifacts/api-server/api/index.ts": {
-      "runtime": "@vercel/node"
+    "api/index.mjs": {
+      "runtime": "nodejs22.x",
+      "includeFiles": "api/dist/**"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/artifacts/api-server/api/index.ts"
+      "destination": "/api/index.mjs"
     },
     {
       "source": "/(.*)",
